@@ -1,16 +1,40 @@
-// filepath: c:\Users\swaya\OneDrive\Desktop\intervuefrontend\frontend\src\StudentNameEntry.js
-import React, { useState } from 'react';
+// filepath: src/StudentNameEntry.js
+
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import API from './api';
 
 function StudentNameEntry() {
   const [name, setName] = useState('');
   const navigate = useNavigate();
 
-  const handleContinue = () => {
-    if (name.trim()) {
-      // Save name in sessionStorage so it persists on refresh but not across tabs
-      sessionStorage.setItem('studentName', name.trim());
+  useEffect(() => {
+    // Generate a unique tabId (persisted per tab using sessionStorage)
+    if (!sessionStorage.getItem('tabId')) {
+      const tabId = Math.random().toString(36).substring(2, 10);
+      sessionStorage.setItem('tabId', tabId);
+    }
+  }, []);
+
+  const handleContinue = async () => {
+    if (!name.trim()) return;
+
+    const trimmedName = name.trim();
+    const tabId = sessionStorage.getItem('tabId');
+
+    try {
+      // Register student with backend
+      const res = await API.post('/students', { name: trimmedName, tabId });
+      const { studentId } = res.data;
+
+      // Save in sessionStorage
+      sessionStorage.setItem('studentName', trimmedName);
+      sessionStorage.setItem('studentId', studentId);
+
       navigate('/student/dashboard');
+    } catch (error) {
+      console.error('Failed to register student:', error);
+      alert('Something went wrong. Please try again.');
     }
   };
 

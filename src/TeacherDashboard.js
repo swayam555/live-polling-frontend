@@ -1,11 +1,14 @@
-// filepath: c:\Users\swaya\OneDrive\Desktop\intervuefrontend\frontend\src\TeacherDashboard.js
 import React, { useState } from 'react';
+import API from './api'; // axios instance
+import { useNavigate } from 'react-router-dom';
 
 function TeacherDashboard() {
   const [question, setQuestion] = useState('');
   const [options, setOptions] = useState(['', '']);
-  const [correct, setCorrect] = useState([false, false]);
+  const [correct, setCorrect] = useState([false, false]); // not used in backend (yet)
   const [timeLimit, setTimeLimit] = useState(60);
+
+  const navigate = useNavigate();
 
   const handleOptionChange = (index, value) => {
     const newOptions = [...options];
@@ -28,10 +31,28 @@ function TeacherDashboard() {
     setTimeLimit(Number(e.target.value));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // For now, just log the poll data
-    alert('Poll Created!\n' + JSON.stringify({ question, options, correct, timeLimit }, null, 2));
+
+    if (!question.trim() || options.some(opt => !opt.trim())) {
+      alert("Please fill in the question and all options.");
+      return;
+    }
+
+    try {
+      // Send to backend
+      const res = await API.post('/polls', {
+        question: question.trim(),
+        options: options.map(opt => opt.trim()),
+        // optionally: timeLimit
+      });
+
+      alert('Poll created successfully!');
+      navigate('/teacher/results'); // Or show results after students vote
+    } catch (err) {
+      console.error('Error creating poll:', err);
+      alert(err.response?.data?.message || 'Something went wrong');
+    }
   };
 
   return (
@@ -43,8 +64,9 @@ function TeacherDashboard() {
         Let’s <span style={{ fontWeight: 'bold' }}>Get Started</span>
       </h1>
       <p style={{ color: '#666' }}>
-        You’ll have the ability to create and manage polls, ask questions, and monitor your students’ responses in real-time.
+        Create and manage polls, ask questions, and monitor your students’ responses in real-time.
       </p>
+
       <form onSubmit={handleSubmit} style={{ maxWidth: 500, margin: '40px auto', textAlign: 'left' }}>
         <label>
           <strong>Enter your question</strong>
@@ -54,6 +76,7 @@ function TeacherDashboard() {
             <option value={30}>30 seconds</option>
           </select>
         </label>
+
         <textarea
           value={question}
           onChange={e => setQuestion(e.target.value)}
@@ -69,6 +92,7 @@ function TeacherDashboard() {
             fontSize: 16
           }}
         />
+
         <div>
           <strong>Edit Options</strong>
           {options.map((opt, idx) => (
@@ -108,18 +132,24 @@ function TeacherDashboard() {
               </label>
             </div>
           ))}
-          <button type="button" onClick={addOption} style={{
-            marginTop: 10,
-            padding: '6px 16px',
-            borderRadius: 5,
-            border: '1px solid #4F0DCE',
-            background: '#fff',
-            color: '#4F0DCE',
-            cursor: 'pointer'
-          }}>
+
+          <button
+            type="button"
+            onClick={addOption}
+            style={{
+              marginTop: 10,
+              padding: '6px 16px',
+              borderRadius: 5,
+              border: '1px solid #4F0DCE',
+              background: '#fff',
+              color: '#4F0DCE',
+              cursor: 'pointer'
+            }}
+          >
             + Add More option
           </button>
         </div>
+
         <button
           type="submit"
           style={{
